@@ -533,4 +533,4 @@ Traefik-specific models and mapping between internal models and Traefik's expect
 
 ## License
 
-[MIT License](LICENSE)
+[GNU GENERAL PUBLIC LICENSE, Version 3](LICENSE)
