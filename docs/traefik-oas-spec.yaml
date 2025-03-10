@@ -1,0 +1,1177 @@
+components:
+  schemas:
+    Http:
+      type: object
+      properties:
+        routers:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/Router'
+        services:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/Service'
+        middlewares:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/Middleware'
+
+    # Common structures
+    ResourceResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        created:
+          type: boolean
+        updated:
+          type: boolean
+        deleted:
+          type: boolean
+      required:
+        - id
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        details:
+          type: string
+      required:
+        - error
+
+    # Primary Entities
+    Router:
+      type: object
+      properties:
+        id:
+          type: string
+        entryPoints:
+          type: array
+          items:
+            type: string
+        middlewares:
+          type: array
+          items:
+            type: string
+        service:
+          type: string
+        rule:
+          type: string
+        ruleSyntax:
+          type: string
+        priority:
+          type: integer
+        tls:
+          $ref: '#/components/schemas/RouterTLS'
+        observability:
+          $ref: '#/components/schemas/Observability'
+      required:
+        - id
+        - rule
+        - service
+
+    RouterTLS:
+      type: object
+      properties:
+        options:
+          type: string
+        certResolver:
+          type: string
+        domains:
+          type: array
+          items:
+            $ref: '#/components/schemas/Domain'
+
+    Domain:
+      type: object
+      properties:
+        main:
+          type: string
+        sans:
+          type: array
+          items:
+            type: string
+
+    Observability:
+      type: object
+      properties:
+        accessLogs:
+          type: boolean
+        tracing:
+          type: boolean
+        metrics:
+          type: boolean
+
+    Service:
+      type: object
+      properties:
+        id:
+          type: string
+        serviceType:
+          type: string
+          enum: [loadBalancer, weighted, mirroring, failover]
+        url:
+          type: string
+          description: "Shorthand for loadBalancer with a single server URL"
+        loadBalancer:
+          $ref: '#/components/schemas/LoadBalancerService'
+        weighted:
+          $ref: '#/components/schemas/WeightedService'
+        mirroring:
+          $ref: '#/components/schemas/MirroringService'
+        failover:
+          $ref: '#/components/schemas/FailoverService'
+      required:
+        - id
+      oneOf:
+        - required: [url]
+        - required: [loadBalancer]
+        - required: [weighted]
+        - required: [mirroring]
+        - required: [failover]
+
+    LoadBalancerService:
+      type: object
+      properties:
+        servers:
+          type: array
+          items:
+            $ref: '#/components/schemas/Server'
+        healthCheck:
+          $ref: '#/components/schemas/HealthCheck'
+        passHostHeader:
+          type: boolean
+        responseForwarding:
+          $ref: '#/components/schemas/ResponseForwarding'
+        serversTransport:
+          type: string
+        sticky:
+          $ref: '#/components/schemas/Sticky'
+
+    WeightedService:
+      type: object
+      properties:
+        services:
+          type: array
+          items:
+            $ref: '#/components/schemas/WeightedServiceItem'
+        sticky:
+          $ref: '#/components/schemas/Sticky'
+        healthCheck:
+          $ref: '#/components/schemas/HealthCheck'
+
+    MirroringService:
+      type: object
+      properties:
+        service:
+          type: string
+        mirrorBody:
+          type: boolean
+        maxBodySize:
+          type: integer
+        mirrors:
+          type: array
+          items:
+            $ref: '#/components/schemas/MirrorServiceItem'
+        healthCheck:
+          $ref: '#/components/schemas/HealthCheck'
+
+    FailoverService:
+      type: object
+      properties:
+        service:
+          type: string
+        fallback:
+          type: string
+        healthCheck:
+          $ref: '#/components/schemas/HealthCheck'
+
+    Server:
+      type: object
+      properties:
+        url:
+          type: string
+        weight:
+          type: integer
+        preservePath:
+          type: boolean
+
+    WeightedServiceItem:
+      type: object
+      properties:
+        name:
+          type: string
+        weight:
+          type: integer
+      required:
+        - name
+        - weight
+
+    MirrorServiceItem:
+      type: object
+      properties:
+        name:
+          type: string
+        percent:
+          type: integer
+      required:
+        - name
+        - percent
+
+    HealthCheck:
+      type: object
+      properties:
+        scheme:
+          type: string
+        mode:
+          type: string
+        path:
+          type: string
+        method:
+          type: string
+        status:
+          type: integer
+        port:
+          type: integer
+        interval:
+          type: string
+        timeout:
+          type: string
+        hostname:
+          type: string
+        followRedirects:
+          type: boolean
+        headers:
+          type: object
+          additionalProperties:
+            type: string
+
+    ResponseForwarding:
+      type: object
+      properties:
+        flushInterval:
+          type: string
+
+    Sticky:
+      type: object
+      properties:
+        cookie:
+          $ref: '#/components/schemas/StickyCooke'
+
+    StickyCooke:
+      type: object
+      properties:
+        name:
+          type: string
+        secure:
+          type: boolean
+        httpOnly:
+          type: boolean
+        sameSite:
+          type: string
+        maxAge:
+          type: integer
+        path:
+          type: string
+
+    # Middleware handling
+    Middleware:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          enum: [
+            addPrefix, basicAuth, buffering, chain, circuitBreaker, compress, 
+            contentType, digestAuth, errors, forwardAuth, grpcWeb, headers,
+            ipAllowList, ipWhiteList, inFlightReq, passTLSClientCert, plugin,
+            rateLimit, redirectRegex, redirectScheme, replacePath, replacePathRegex,
+            retry, stripPrefix, stripPrefixRegex
+          ]
+        config:
+          oneOf:
+            - $ref: '#/components/schemas/AddPrefixConfig'
+            - $ref: '#/components/schemas/BasicAuthConfig'
+            - $ref: '#/components/schemas/BufferingConfig'
+            - $ref: '#/components/schemas/ChainConfig'
+            - $ref: '#/components/schemas/CircuitBreakerConfig'
+            - $ref: '#/components/schemas/CompressConfig'
+            - $ref: '#/components/schemas/ContentTypeConfig'
+            - $ref: '#/components/schemas/DigestAuthConfig'
+            - $ref: '#/components/schemas/ErrorsConfig'
+            - $ref: '#/components/schemas/ForwardAuthConfig'
+            - $ref: '#/components/schemas/GrpcWebConfig'
+            - $ref: '#/components/schemas/HeadersConfig'
+            - $ref: '#/components/schemas/IPAllowListConfig'
+            - $ref: '#/components/schemas/IPWhiteListConfig'
+            - $ref: '#/components/schemas/InFlightReqConfig'
+            - $ref: '#/components/schemas/PassTLSClientCertConfig'
+            - $ref: '#/components/schemas/PluginConfig'
+            - $ref: '#/components/schemas/RateLimitConfig'
+            - $ref: '#/components/schemas/RedirectRegexConfig'
+            - $ref: '#/components/schemas/RedirectSchemeConfig'
+            - $ref: '#/components/schemas/ReplacePathConfig'
+            - $ref: '#/components/schemas/ReplacePathRegexConfig'
+            - $ref: '#/components/schemas/RetryConfig'
+            - $ref: '#/components/schemas/StripPrefixConfig'
+            - $ref: '#/components/schemas/StripPrefixRegexConfig'
+      required:
+        - id
+        - type
+        - config
+
+    # Middleware configurations
+    AddPrefixConfig:
+      type: object
+      properties:
+        prefix:
+          type: string
+      required:
+        - prefix
+
+    BasicAuthConfig:
+      type: object
+      properties:
+        users:
+          type: array
+          items:
+            type: string
+        usersFile:
+          type: string
+        realm:
+          type: string
+        removeHeader:
+          type: boolean
+        headerField:
+          type: string
+
+    BufferingConfig:
+      type: object
+      properties:
+        maxRequestBodyBytes:
+          type: integer
+        memRequestBodyBytes:
+          type: integer
+        maxResponseBodyBytes:
+          type: integer
+        memResponseBodyBytes:
+          type: integer
+        retryExpression:
+          type: string
+
+    ChainConfig:
+      type: object
+      properties:
+        middlewares:
+          type: array
+          items:
+            type: string
+      required:
+        - middlewares
+
+    CircuitBreakerConfig:
+      type: object
+      properties:
+        expression:
+          type: string
+        checkPeriod:
+          type: string
+        fallbackDuration:
+          type: string
+        recoveryDuration:
+          type: string
+        responseCode:
+          type: integer
+      required:
+        - expression
+
+    CompressConfig:
+      type: object
+      properties:
+        excludedContentTypes:
+          type: array
+          items:
+            type: string
+        includedContentTypes:
+          type: array
+          items:
+            type: string
+        minResponseBodyBytes:
+          type: integer
+        encodings:
+          type: array
+          items:
+            type: string
+        defaultEncoding:
+          type: string
+
+    ContentTypeConfig:
+      type: object
+      properties:
+        autoDetect:
+          type: boolean
+
+    DigestAuthConfig:
+      type: object
+      properties:
+        users:
+          type: array
+          items:
+            type: string
+        usersFile:
+          type: string
+        removeHeader:
+          type: boolean
+        realm:
+          type: string
+        headerField:
+          type: string
+
+    ErrorsConfig:
+      type: object
+      properties:
+        status:
+          type: array
+          items:
+            type: string
+        service:
+          type: string
+        query:
+          type: string
+      required:
+        - status
+        - service
+
+    ForwardAuthConfig:
+      type: object
+      properties:
+        address:
+          type: string
+        tls:
+          $ref: '#/components/schemas/ForwardAuthTLS'
+        trustForwardHeader:
+          type: boolean
+        authResponseHeaders:
+          type: array
+          items:
+            type: string
+        authResponseHeadersRegex:
+          type: string
+        authRequestHeaders:
+          type: array
+          items:
+            type: string
+        addAuthCookiesToResponse:
+          type: array
+          items:
+            type: string
+        headerField:
+          type: string
+        forwardBody:
+          type: boolean
+        maxBodySize:
+          type: integer
+        preserveLocationHeader:
+          type: boolean
+      required:
+        - address
+
+    ForwardAuthTLS:
+      type: object
+      properties:
+        ca:
+          type: string
+        cert:
+          type: string
+        key:
+          type: string
+        insecureSkipVerify:
+          type: boolean
+        caOptional:
+          type: boolean
+
+    GrpcWebConfig:
+      type: object
+      properties:
+        allowOrigins:
+          type: array
+          items:
+            type: string
+
+    HeadersConfig:
+      type: object
+      properties:
+        customRequestHeaders:
+          type: object
+          additionalProperties:
+            type: string
+        customResponseHeaders:
+          type: object
+          additionalProperties:
+            type: string
+        accessControlAllowCredentials:
+          type: boolean
+        accessControlAllowHeaders:
+          type: array
+          items:
+            type: string
+        accessControlAllowMethods:
+          type: array
+          items:
+            type: string
+        accessControlAllowOriginList:
+          type: array
+          items:
+            type: string
+        accessControlAllowOriginListRegex:
+          type: array
+          items:
+            type: string
+        accessControlExposeHeaders:
+          type: array
+          items:
+            type: string
+        accessControlMaxAge:
+          type: integer
+        addVaryHeader:
+          type: boolean
+        allowedHosts:
+          type: array
+          items:
+            type: string
+        hostsProxyHeaders:
+          type: array
+          items:
+            type: string
+        sslProxyHeaders:
+          type: object
+          additionalProperties:
+            type: string
+        stsSeconds:
+          type: integer
+        stsIncludeSubdomains:
+          type: boolean
+        stsPreload:
+          type: boolean
+        forceSTSHeader:
+          type: boolean
+        frameDeny:
+          type: boolean
+        customFrameOptionsValue:
+          type: string
+        contentTypeNosniff:
+          type: boolean
+        browserXssFilter:
+          type: boolean
+        customBrowserXSSValue:
+          type: string
+        contentSecurityPolicy:
+          type: string
+        contentSecurityPolicyReportOnly:
+          type: string
+        publicKey:
+          type: string
+        referrerPolicy:
+          type: string
+        permissionsPolicy:
+          type: string
+        isDevelopment:
+          type: boolean
+        featurePolicy:
+          type: string
+        sslRedirect:
+          type: boolean
+        sslTemporaryRedirect:
+          type: boolean
+        sslHost:
+          type: string
+        sslForceHost:
+          type: boolean
+
+    IPStrategy:
+      type: object
+      properties:
+        depth:
+          type: integer
+        excludedIPs:
+          type: array
+          items:
+            type: string
+        ipv6Subnet:
+          type: integer
+
+    IPAllowListConfig:
+      type: object
+      properties:
+        sourceRange:
+          type: array
+          items:
+            type: string
+        ipStrategy:
+          $ref: '#/components/schemas/IPStrategy'
+        rejectStatusCode:
+          type: integer
+      required:
+        - sourceRange
+
+    IPWhiteListConfig:
+      type: object
+      properties:
+        sourceRange:
+          type: array
+          items:
+            type: string
+        ipStrategy:
+          $ref: '#/components/schemas/IPStrategy'
+      required:
+        - sourceRange
+
+    SourceCriterion:
+      type: object
+      properties:
+        ipStrategy:
+          $ref: '#/components/schemas/IPStrategy'
+        requestHeaderName:
+          type: string
+        requestHost:
+          type: boolean
+
+    InFlightReqConfig:
+      type: object
+      properties:
+        amount:
+          type: integer
+        sourceCriterion:
+          $ref: '#/components/schemas/SourceCriterion'
+      required:
+        - amount
+
+    PassTLSClientCertConfig:
+      type: object
+      properties:
+        pem:
+          type: boolean
+        info:
+          $ref: '#/components/schemas/ClientCertInfo'
+
+    ClientCertInfo:
+      type: object
+      properties:
+        notAfter:
+          type: boolean
+        notBefore:
+          type: boolean
+        sans:
+          type: boolean
+        serialNumber:
+          type: boolean
+        subject:
+          $ref: '#/components/schemas/ClientCertSubject'
+        issuer:
+          $ref: '#/components/schemas/ClientCertIssuer'
+
+    ClientCertSubject:
+      type: object
+      properties:
+        country:
+          type: boolean
+        province:
+          type: boolean
+        locality:
+          type: boolean
+        organization:
+          type: boolean
+        organizationalUnit:
+          type: boolean
+        commonName:
+          type: boolean
+        serialNumber:
+          type: boolean
+        domainComponent:
+          type: boolean
+
+    ClientCertIssuer:
+      type: object
+      properties:
+        country:
+          type: boolean
+        province:
+          type: boolean
+        locality:
+          type: boolean
+        organization:
+          type: boolean
+        commonName:
+          type: boolean
+        serialNumber:
+          type: boolean
+        domainComponent:
+          type: boolean
+
+    PluginConfig:
+      type: object
+      additionalProperties: true
+
+    RateLimitConfig:
+      type: object
+      properties:
+        average:
+          type: integer
+        period:
+          type: string
+        burst:
+          type: integer
+        sourceCriterion:
+          $ref: '#/components/schemas/SourceCriterion'
+      required:
+        - average
+
+    RedirectRegexConfig:
+      type: object
+      properties:
+        regex:
+          type: string
+        replacement:
+          type: string
+        permanent:
+          type: boolean
+      required:
+        - regex
+        - replacement
+
+    RedirectSchemeConfig:
+      type: object
+      properties:
+        scheme:
+          type: string
+        port:
+          type: string
+        permanent:
+          type: boolean
+      required:
+        - scheme
+
+    ReplacePathConfig:
+      type: object
+      properties:
+        path:
+          type: string
+      required:
+        - path
+
+    ReplacePathRegexConfig:
+      type: object
+      properties:
+        regex:
+          type: string
+        replacement:
+          type: string
+      required:
+        - regex
+        - replacement
+
+    RetryConfig:
+      type: object
+      properties:
+        attempts:
+          type: integer
+        initialInterval:
+          type: string
+      required:
+        - attempts
+
+    StripPrefixConfig:
+      type: object
+      properties:
+        prefixes:
+          type: array
+          items:
+            type: string
+        forceSlash:
+          type: boolean
+      required:
+        - prefixes
+
+    StripPrefixRegexConfig:
+      type: object
+      properties:
+        regex:
+          type: array
+          items:
+            type: string
+      required:
+        - regex
+
+    # Composite Service
+    CompositeService:
+      type: object
+      properties:
+        id:
+          type: string
+        router:
+          $ref: '#/components/schemas/Router'
+        service:
+          $ref: '#/components/schemas/Service'
+        middlewares:
+          type: array
+          items:
+            $ref: '#/components/schemas/Middleware'
+      required:
+        - id
+        - router
+        - service
+
+    # Dynamic Configuration (flattened)
+    DynamicConfig:
+      type: object
+      properties:
+        httpRouters:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/Router'
+        httpServices:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/Service'
+        httpMiddlewares:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/Middleware'
+        tcpRouters:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/TCPRouter'
+        tcpServices: 
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/TCPService'
+        tcpMiddlewares:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/TCPMiddleware'
+        udpRouters:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/UDPRouter'
+        udpServices:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/UDPService'
+        tlsCertificates:
+          type: array
+          items:
+            $ref: '#/components/schemas/TLSCertificate'
+        tlsOptions:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/TLSOption'
+        tlsStores:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/TLSStore'
+
+    # TCP Components
+    TCPRouter:
+      type: object
+      properties:
+        id:
+          type: string
+        entryPoints:
+          type: array
+          items:
+            type: string
+        middlewares:
+          type: array
+          items:
+            type: string
+        service:
+          type: string
+        rule:
+          type: string
+        ruleSyntax:
+          type: string
+        priority:
+          type: integer
+        tls:
+          $ref: '#/components/schemas/TCPRouterTLS'
+      required:
+        - id
+        - rule
+        - service
+
+    TCPRouterTLS:
+      type: object
+      properties:
+        passthrough:
+          type: boolean
+        options:
+          type: string
+        certResolver:
+          type: string
+        domains:
+          type: array
+          items:
+            $ref: '#/components/schemas/Domain'
+
+    TCPService:
+      type: object
+      properties:
+        id:
+          type: string
+        serviceType:
+          type: string
+          enum: [loadBalancer, weighted]
+        loadBalancer:
+          $ref: '#/components/schemas/TCPLoadBalancerService'
+        weighted:
+          $ref: '#/components/schemas/TCPWeightedService'
+      required:
+        - id
+      oneOf:
+        - required: [loadBalancer]
+        - required: [weighted]
+
+    TCPLoadBalancerService:
+      type: object
+      properties:
+        proxyProtocol:
+          $ref: '#/components/schemas/ProxyProtocol'
+        servers:
+          type: array
+          items:
+            $ref: '#/components/schemas/TCPServer'
+        serversTransport:
+          type: string
+        terminationDelay:
+          type: integer
+
+    TCPServer:
+      type: object
+      properties:
+        address:
+          type: string
+        tls:
+          type: boolean
+      required:
+        - address
+
+    ProxyProtocol:
+      type: object
+      properties:
+        version:
+          type: integer
+
+    TCPWeightedService:
+      type: object
+      properties:
+        services:
+          type: array
+          items:
+            $ref: '#/components/schemas/WeightedServiceItem'
+      required:
+        - services
+
+    TCPMiddleware:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          enum: [ipAllowList, ipWhiteList, inFlightConn]
+        config:
+          oneOf:
+            - $ref: '#/components/schemas/TCPIPAllowListConfig'
+            - $ref: '#/components/schemas/TCPIPWhiteListConfig'
+            - $ref: '#/components/schemas/TCPInFlightConnConfig'
+      required:
+        - id
+        - type
+        - config
+
+    TCPIPAllowListConfig:
+      type: object
+      properties:
+        sourceRange:
+          type: array
+          items:
+            type: string
+      required:
+        - sourceRange
+
+    TCPIPWhiteListConfig:
+      type: object
+      properties:
+        sourceRange:
+          type: array
+          items:
+            type: string
+      required:
+        - sourceRange
+
+    TCPInFlightConnConfig:
+      type: object
+      properties:
+        amount:
+          type: integer
+      required:
+        - amount
+
+    # UDP Components
+    UDPRouter:
+      type: object
+      properties:
+        id:
+          type: string
+        entryPoints:
+          type: array
+          items:
+            type: string
+        service:
+          type: string
+      required:
+        - id
+        - service
+
+    UDPService:
+      type: object
+      properties:
+        id:
+          type: string
+        serviceType:
+          type: string
+          enum: [loadBalancer, weighted]
+        loadBalancer:
+          $ref: '#/components/schemas/UDPLoadBalancerService'
+        weighted:
+          $ref: '#/components/schemas/UDPWeightedService'
+      required:
+        - id
+      oneOf:
+        - required: [loadBalancer]
+        - required: [weighted]
+
+    UDPLoadBalancerService:
+      type: object
+      properties:
+        servers:
+          type: array
+          items:
+            $ref: '#/components/schemas/UDPServer'
+      required:
+        - servers
+
+    UDPServer:
+      type: object
+      properties:
+        address:
+          type: string
+      required:
+        - address
+
+    UDPWeightedService:
+      type: object
+      properties:
+        services:
+          type: array
+          items:
+            $ref: '#/components/schemas/WeightedServiceItem'
+      required:
+        - services
+
+    # TLS Components
+    TLSCertificate:
+      type: object
+      properties:
+        certFile:
+          type: string
+        keyFile:
+          type: string
+        stores:
+          type: array
+          items:
+            type: string
+      required:
+        - certFile
+        - keyFile
+
+    TLSOption:
+      type: object
+      properties:
+        minVersion:
+          type: string
+        maxVersion:
+          type: string
+        cipherSuites:
+          type: array
+          items:
+            type: string
+        curvePreferences:
+          type: array
+          items:
+            type: string
+        clientAuth:
+          $ref: '#/components/schemas/ClientAuth'
+        sniStrict:
+          type: boolean
+        alpnProtocols:
+          type: array
+          items:
+            type: string
+        preferServerCipherSuites:
+          type: boolean
+
+    ClientAuth:
+      type: object
+      properties:
+        caFiles:
+          type: array
+          items:
+            type: string
+        clientAuthType:
+          type: string
+
+    TLSStore:
+      type: object
+      properties:
+        defaultCertificate:
+          $ref: '#/components/schemas/DefaultCertificate'
+        defaultGeneratedCert:
+          $ref: '#/components/schemas/DefaultGeneratedCert'
+
+    DefaultCertificate:
+      type: object
+      properties:
+        certFile:
+          type: string
+        keyFile:
+          type: string
+      required:
+        - certFile
+        - keyFile
+
+    DefaultGeneratedCert:
+      type: object
+      properties:
+        resolver:
+          type: string
+        domain:
+          $ref: '#/components/schemas/DomainWithSans'
+      required:
+        - resolver
+        - domain
+
+    DomainWithSans:
+      type: object
+      properties:
+        main:
+          type: string
+        sans:
+          type: array
+          items:
+            type: string
+      required:
+        - main

@@ -1,0 +1,19 @@
+entryPoints:
+  web:
+    address: ":80"
+  websecure:
+    address: ":443"
+
+api:
+  dashboard: true
+  insecure: true
+
+providers:
+  http:
+    endpoint: "http://host.docker.internal:9000/traefik/provider"
+    pollInterval: "2s"
+
+log:
+  level: DEBUG
+
+accessLog: {}

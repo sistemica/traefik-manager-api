@@ -1,0 +1,83 @@
+version: '3.8'
+
+services:
+  traefik-manager:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: traefik-manager
+    volumes:
+      - traefik-manager-data:/data
+    ports:
+      - "9000:9000"
+    environment:
+      - SERVER_PORT=9000
+      - STORAGE_FILE_PATH=/data/traefik-manager.json
+      - LOG_LEVEL=info
+      - LOG_FORMAT=json
+      # Uncomment and set these for authentication if needed
+      # - AUTH_ENABLED=true
+      # - AUTH_KEY=your-secure-api-key
+    networks:
+      - traefik-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "--quiet", "http://localhost:9000/api/v1/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+  traefik:
+    image: traefik:v3.3
+    container_name: traefik
+    ports:
+      - "80:80"      # HTTP
+      - "443:443"    # HTTPS
+      - "8080:8080"  # Dashboard
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./testing/traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+      # - ./certs:/etc/traefik/certs  # Uncomment for custom certificates
+    networks:
+      - traefik-net
+    depends_on:
+      traefik-manager:
+        condition: service_healthy
+    environment:
+      # For development/testing only - use proper TLS in production
+      - TRAEFIK_API_INSECURE=true
+      - TRAEFIK_LOG_LEVEL=INFO
+    command:
+      # Use the provided traefik.yml configuration
+      - "--configFile=/etc/traefik/traefik.yml"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "--quiet", "http://localhost:8080/ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+  httpbin:
+    image: kennethreitz/httpbin
+    container_name: httpbin
+    networks:
+      - traefik-net
+    restart: unless-stopped
+    # No ports exposed - accessed through Traefik
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "--quiet", "http://localhost:80/get"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+networks:
+  traefik-net:
+    name: traefik-net
+    driver: bridge
+
+volumes:
+  traefik-manager-data:
+    name: traefik-manager-data
