@@ -1,0 +1,72 @@
+name: Release Multi-OS Binaries
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    name: Build for ${{ matrix.os }} / ${{ matrix.arch }}
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        include:
+          - os: linux
+            arch: amd64
+          - os: linux
+            arch: arm64
+          - os: windows
+            arch: amd64
+          - os: darwin
+            arch: amd64
+          - os: darwin
+            arch: arm64
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.23.5'
+        check-latest: true
+
+    - name: Install dependencies
+      run: go mod download
+
+    - name: Set version
+      id: vars
+      run: echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+    - name: Build binary
+      env:
+        GOOS: ${{ matrix.os }}
+        GOARCH: ${{ matrix.arch }}
+      run: |
+        OUTPUT_NAME=traefik-manager
+        if [ "${{ matrix.os }}" = "windows" ]; then
+          OUTPUT_NAME=traefik-manager.exe
+        fi
+        
+        go build -v -ldflags "-X main.version=${{ steps.vars.outputs.tag }}" -o bin/$OUTPUT_NAME-${{ matrix.os }}-${{ matrix.arch }} ./cmd/server/main.go
+
+    - name: Create release asset
+      run: |
+        cd bin
+        OUTPUT_NAME=traefik-manager
+        if [ "${{ matrix.os }}" = "windows" ]; then
+          OUTPUT_NAME=traefik-manager.exe
+        fi
+        
+        ZIP_NAME=traefik-manager-${{ steps.vars.outputs.tag }}-${{ matrix.os }}-${{ matrix.arch }}.zip
+        zip -r $ZIP_NAME $OUTPUT_NAME-${{ matrix.os }}-${{ matrix.arch }}
+        echo "ZIP_NAME=$ZIP_NAME" >> $GITHUB_ENV
+
+    - name: Upload binary to release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: bin/${{ env.ZIP_NAME }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
