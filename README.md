@@ -5,13 +5,27 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/sistemica/traefik-manager/actions/workflows/test.yml"><img src="https://github.com/sistemica/traefik-manager/actions/workflows/test.yml/badge.svg" alt="Tests"></a>
-  <a href="https://github.com/sistemica/traefik-manager/releases/latest"><img src="https://img.shields.io/github/v/release/sistemica/traefik-manager" alt="Release"></a>
-  <a href="https://github.com/sistemica/traefik-manager/actions/workflows/docker-publish.yml"><img src="https://github.com/sistemica/traefik-manager/actions/workflows/docker-publish.yml/badge.svg" alt="Docker Build"></a>
-  <a href="https://goreportcard.com/report/github.com/sistemica/traefik-manager"><img src="https://goreportcard.com/badge/github.com/sistemica/traefik-manager" alt="Go Report Card"></a>
-  <a href="https://github.com/sistemica/traefik-manager/blob/main/LICENSE"><img src="https://img.shields.io/github/license/sistemica/traefik-manager" alt="License"></a>
-  <a href="https://hub.docker.com/r/sistemica/traefik-manager"><img src="https://img.shields.io/docker/pulls/sistemica/traefik-manager" alt="Docker Pulls"></a>
-  <a href="https://buymeacoffee.com/hannes"><img src="https://img.shields.io/badge/support-buymeacoffee-yellow" alt="Buy Me A Coffee"></a>
+  <a href="https://github.com/sistemica/traefik-manager/actions/workflows/test.yml">
+    <img src="https://github.com/sistemica/traefik-manager/actions/workflows/test.yml/badge.svg" alt="Tests">
+  </a>
+  <a href="https://github.com/sistemica/traefik-manager/releases">
+    <img src="https://img.shields.io/github/v/release/sistemica/traefik-manager?display_name=tag" alt="Release">
+  </a>
+  <a href="https://github.com/sistemica/traefik-manager/actions/workflows/docker-publish.yml">
+    <img src="https://github.com/sistemica/traefik-manager/actions/workflows/docker-publish.yml/badge.svg" alt="Docker Build">
+  </a>
+  <a href="https://goreportcard.com/report/github.com/sistemica/traefik-manager">
+    <img src="https://goreportcard.com/badge/github.com/sistemica/traefik-manager" alt="Go Report Card">
+  </a>
+  <a href="https://github.com/sistemica/traefik-manager/blob/main/LICENSE">
+    <img src="https://img.shields.io/github/license/sistemica/traefik-manager" alt="License">
+  </a>
+  <a href="https://github.com/sistemica/traefik-manager/pkgs/container/traefik-manager">
+    <img src="https://img.shields.io/github/actions/workflow/status/sistemica/traefik-manager/docker-publish.yml?label=docker%20build" alt="Docker Build Status">
+  </a>
+  <a href="https://buymeacoffee.com/hannes">
+    <img src="https://img.shields.io/badge/support-buymeacoffee-yellow" alt="Buy Me A Coffee">
+  </a>
 </p>
 
 ## Introduction
